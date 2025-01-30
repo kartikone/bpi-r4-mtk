@@ -70,6 +70,10 @@ jobs:
         run: |
           git clone https://github.com/woziwrt/bpi-r4-mtk
 
+      - name: Clone my repo
+        run: |
+          git clone https://github.com/danpawlik/bpi-r4-mtk my-bpi-r4-mtk
+
       - name: Recreate patches dir
         run: |
           rm -rf package/firmware/wireless-regdb/patches;
@@ -121,9 +125,9 @@ jobs:
       - name: Print current config file
         run: cat .config
 
-      - name: Replace current config wile with woziwrt
+      - name: Replace current config with my config
         run: |
-          cp bpi-r4-mtk/configs/config.basic .config
+          cp my-bpi-r4-mtk/configs/my.config .config
 
       - name: Run defconfig
         run: |
