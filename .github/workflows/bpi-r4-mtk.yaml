@@ -15,9 +15,15 @@ on:
           - non-poe
 
 env:
-  REMOTE_REPOSITORY: openwrt/openwrt
-  # REMOTE_BRANCH: openwrt-24.10
-  REMOTE_BRANCH: 68bf4844a1cbc9f404f6e93b70a2657e74f1dce9
+  REMOTE_REPOSITORY: danpawlik/bpi-r4-mtk
+  REMOTE_BRANCH: main
+  # OpenWrt
+  OPENWRT_REPOSITORY: https://github.com/openwrt/openwrt
+  OPENWRT_REF: 68bf4844a1cbc9f404f6e93b70a2657e74f1dce9
+  # Mediatek Feed
+  MEDIATEK_REPOSITORY: https://git01.mediatek.com/openwrt/feeds/mtk-openwrt-feeds
+  MEDIATEK_REF: 42df09d4cf568c795e71427668fae0eea4f112c5
+  # Configuration
   RELEASE_PREFIX: bpi-r4-mtk
   DEVICE_CONFIG: ${{ inputs.DEVICE_CONFIG == 'poe' && 'configs/mediatek/mt7988a/bpi-r4-poe' || 'configs/mediatek/mt7988a/bpi-r4' }}
 
@@ -60,72 +66,83 @@ jobs:
           repository: ${{ env.REMOTE_REPOSITORY }}
           ref: ${{ env.REMOTE_BRANCH }}
 
+      - name: Clone OpenWrt
+        run: |
+          git clone ${{ env.OPENWRT_REPOSITORY }} openwrt;
+          cd openwrt;
+          git checkout ${{ env.OPENWRT_REF }}
+
       - name: Clone mediatek feed
         run: |
-          git clone https://git01.mediatek.com/openwrt/feeds/mtk-openwrt-feeds mtk-openwrt-feeds;
+          git clone ${{ env.MEDIATEK_REPOSITORY }} mtk-openwrt-feeds;
           cd mtk-openwrt-feeds;
-          git checkout 42df09d4cf568c795e71427668fae0eea4f112c5
+          git checkout ${{ env.MEDIATEK_REF }}
 
-      - name: Clone woziwrt repo
+      - name: Change autobuild rules - important
         run: |
-          git clone https://github.com/woziwrt/bpi-r4-mtk
+          cd openwrt;
+          cp ../my_files/rules ../mtk-openwrt-feeds/autobuild/unified
 
-      - name: Recreate patches dir
+      - name: Change wireless regdb - optional
         run: |
+          cd openwrt;
           rm -rf package/firmware/wireless-regdb/patches;
-          rm -rf mtk-openwrt-feeds/autobuild/unified/filogic/mac80211/24.10/files/package/firmware/wireless-regdb/patches;
+          rm -rf ..//mtk-openwrt-feeds/autobuild/unified/filogic/mac80211/24.10/files/package/firmware/wireless-regdb/patches;
           mkdir -p package/firmware/wireless-regdb/patches;
-          mkdir -p mtk-openwrt-feeds/autobuild/unified/filogic/mac80211/24.10/files/package/firmware/wireless-regdb/patches;
+          mkdir -p ../mtk-openwrt-feeds/autobuild/unified/filogic/mac80211/24.10/files/package/firmware/wireless-regdb/patches;
+          cp ../my_files/500-tx_power.patch ../mtk-openwrt-feeds/autobuild/unified/filogic/mac80211/24.10/files/package/firmware/wireless-regdb/patches
+          cp ../my_files/regdb.Makefile package/firmware/wireless-regdb/Makefile
 
       - name: Copy woziwrt patches
         run: |
-          cp bpi-r4-mtk/my_files/500-tx_power.patch mtk-openwrt-feeds/autobuild/unified/filogic/mac80211/24.10/files/package/firmware/wireless-regdb/patches
-          cp bpi-r4-mtk/my_files/regdb.Makefile package/firmware/wireless-regdb/Makefile
-          cp bpi-r4-mtk/my_files/rules mtk-openwrt-feeds/autobuild/unified
-          cp bpi-r4-mtk/my_files/mt7988a-rfb-spim-nand-nmbm.dtso target/linux/mediatek/files-6.6/arch/arm64/boot/dts/mediatek
-          cp bpi-r4-mtk/my_files/mt7981-rfb-spim-nor.dtso target/linux/mediatek/files-6.6/arch/arm64/boot/dts/mediatek
-          cp bpi-r4-mtk/my_files/mt7988d-rfb.dts target/linux/mediatek/files-6.6/arch/arm64/boot/dts/mediatek
-          cp bpi-r4-mtk/my_files/mt7988a-rfb-spidev.dtso target/linux/mediatek/files-6.6/arch/arm64/boot/dts/mediatek
+          cd openwrt;
+          cp ../my_files/{/mt7988a-rfb-spim-nand-nmbm.dtso,mt7981-rfb-spim-nor.dtso,mt7988d-rfb.dts,mt7988a-rfb-spidev.dtso} \
+              target/linux/mediatek/files-6.6/arch/arm64/boot/dts/mediatek/
 
-          # cp bpi-r4-mtk/my_files/750-mtk-eth-add-jumbo-frame-support-mt7998.patch target/linux/mediatek/patches-6.6
-          # cp bpi-r4-mtk/my_files/0001-mt76-w-package-makefile.patch mtk-openwrt-feeds/autobuild/unified/filogic/mac80211/24.10/patches-base/0001-mt76-package-makefile.patch
-          # cp bpi-r4-mtk/my_files/0004-mac80211-w-package-makefile.patch mtk-openwrt-feeds/autobuild/unified/filogic/mac80211/24.10/patches-base/0004-mac80211-package-makefile.patch
+          # cp ../my_files/750-mtk-eth-add-jumbo-frame-support-mt7998.patch target/linux/mediatek/patches-6.6
+          # cp ../my_files/0001-mt76-w-package-makefile.patch ../mtk-openwrt-feeds/autobuild/unified/filogic/mac80211/24.10/patches-base/0001-mt76-package-makefile.patch
+          # cp ../my_files/0004-mac80211-w-package-makefile.patch ../mtk-openwrt-feeds/autobuild/unified/filogic/mac80211/24.10/patches-base/0004-mac80211-package-makefile.patch
 
+          cp ../my_files/ethtool/Makefile package/network/utils/ethtool/Makefile
+          # cp -r ../my_files/0008-wozi-mac80211-Support-EHT-1024-aggregation-size-in-T.patch ../mtk-openwrt-feeds/autobuild/unified/filogic/mac80211/24.10/files/package/kernel/mac80211/patches/subsys/0008-wifi-mac80211-Support-EHT-1024-aggregation-size-in-T.patch
+          # cp -r ../my_files/0008-wozi-mac80211-Support-EHT-1024-aggregation-size-in-T.patch ../mtk-openwrt-feeds/autobuild/autobuild_5.4_mac80211_release/mt7988_wifi7_mac80211_mlo/package/kernel/mac80211/patches/subsys/0008-wifi-mac80211-Support-EHT-1024-aggregation-size-in-T.patch
+          cp ../my_files/999-2709-net-ethernet-mtk_eth_soc-add-rss-lro-reg.patch ../mtk-openwrt-feeds/autobuild/unified/global/24.10/files/target/linux/mediatek/patches-6.6/
+          cp ../my_files/999-2710-net-ethernet-mtk_eth_soc-add-rss-support.patch ../mtk-openwrt-feeds/autobuild/unified/global/24.10/files/target/linux/mediatek/patches-6.6/
+          cp ../my_files/0006-arch-arm64-dts-mt7988a-add-adma-intrrupts.patch ../mtk-openwrt-feeds/autobuild/unified/global/24.10/patches-base/
 
-          cp bpi-r4-mtk/my_files/ethtool/Makefile package/network/utils/ethtool/Makefile
-          # cp -r bpi-r4-mtk/my_files/0008-wozi-mac80211-Support-EHT-1024-aggregation-size-in-T.patch mtk-openwrt-feeds/autobuild/unified/filogic/mac80211/24.10/files/package/kernel/mac80211/patches/subsys/0008-wifi-mac80211-Support-EHT-1024-aggregation-size-in-T.patch
-          # cp -r bpi-r4-mtk/my_files/0008-wozi-mac80211-Support-EHT-1024-aggregation-size-in-T.patch mtk-openwrt-feeds/autobuild/autobuild_5.4_mac80211_release/mt7988_wifi7_mac80211_mlo/package/kernel/mac80211/patches/subsys/0008-wifi-mac80211-Support-EHT-1024-aggregation-size-in-T.patch
-          cp bpi-r4-mtk/my_files/999-2709-net-ethernet-mtk_eth_soc-add-rss-lro-reg.patch mtk-openwrt-feeds/autobuild/unified/global/24.10/files/target/linux/mediatek/patches-6.6/
-          cp bpi-r4-mtk/my_files/999-2710-net-ethernet-mtk_eth_soc-add-rss-support.patch mtk-openwrt-feeds/autobuild/unified/global/24.10/files/target/linux/mediatek/patches-6.6/
-          cp bpi-r4-mtk/my_files/0006-arch-arm64-dts-mt7988a-add-adma-intrrupts.patch mtk-openwrt-feeds/autobuild/unified/global/24.10/patches-base/
-          cp -r bpi-r4-mtk/my_files/mediatek/*.* mtk-openwrt-feeds/autobuild/unified/global/24.10/files/target/linux/mediatek/files-6.6/drivers/net/ethernet/mediatek/
-
+          cp -r ../my_files/mediatek/*.* ../mtk-openwrt-feeds/autobuild/unified/global/24.10/files/target/linux/mediatek/files-6.6/drivers/net/ethernet/mediatek/
 
       - name: Make sed
         run: |
           sed -i 's/CONFIG_PACKAGE_perf=y/# CONFIG_PACKAGE_perf is not set/' \
-              mtk-openwrt-feeds/autobuild/unified/filogic/mac80211/24.10/defconfig \
-              mtk-openwrt-feeds/autobuild/autobuild_5.4_mac80211_release/mt7988_wifi7_mac80211_mlo/.config \
-              mtk-openwrt-feeds/autobuild/autobuild_5.4_mac80211_release/mt7986_mac80211/.config
+              ./mtk-openwrt-feeds/autobuild/unified/filogic/mac80211/24.10/defconfig \
+              ./mtk-openwrt-feeds/autobuild/autobuild_5.4_mac80211_release/mt7988_wifi7_mac80211_mlo/.config \
+              ./mtk-openwrt-feeds/autobuild/autobuild_5.4_mac80211_release/mt7986_mac80211/.config
 
           sed -i 's/CONFIG_PACKAGE_kmod-thermal=y/# CONFIG_PACKAGE_kmod-thermal is not set/' \
-              mtk-openwrt-feeds/autobuild/autobuild_5.4_mac80211_release/mt7988_wifi7_mac80211_mlo/.config \
-              mtk-openwrt-feeds/autobuild/autobuild_5.4_mac80211_release/mt7981_mac80211/.config \
-              mtk-openwrt-feeds/autobuild/autobuild_5.4_mac80211_release/mt7986_mac80211/.config
+              ./mtk-openwrt-feeds/autobuild/autobuild_5.4_mac80211_release/mt7988_wifi7_mac80211_mlo/.config \
+              ./mtk-openwrt-feeds/autobuild/autobuild_5.4_mac80211_release/mt7981_mac80211/.config \
+              ./mtk-openwrt-feeds/autobuild/autobuild_5.4_mac80211_release/mt7986_mac80211/.config
 
       - name: Run build script
         run: |
-          bash -x mtk-openwrt-feeds/autobuild/unified/autobuild.sh filogic-mac80211-bpi-r4 log_file=make || true
+          cd openwrt;
+          bash -x ../mtk-openwrt-feeds/autobuild/unified/autobuild.sh filogic-mac80211-bpi-r4 log_file=make || true
 
       - name: Compress all packages
         run: |
+          cd openwrt;
           tar caf bin/targets/mediatek/filogic/packages.tar.gz bin/targets/mediatek/filogic/packages
 
-      - name: Package output
-        run: tar -cvf bpi_r4-images.tar bin/targets/mediatek/filogic
-
       - name: Add config file
-        run: cp .config  bin/targets/mediatek/filogic/config-full
+        run: |
+          cd openwrt;
+          cp .config  bin/targets/mediatek/filogic/config-full
+
+      - name: Package output
+        run: |
+          cd openwrt;
+          tar -cvf ../bpi_r4-images.tar bin/targets/mediatek/filogic
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -159,7 +176,9 @@ jobs:
           body: |
             Updated prebuilt images for BPI-R4 ${{ inputs.DEVICE_CONFIG == 'poe' && 'PoE version' || '' }}  with MTK feed.
 
-            Build Commit: ${{ needs.check_commits.outputs.latest_commit_sha }}
+            OpenWrt ref: ${{ env.OPENWRT_REF }}
+            Mediatek feed ref: ${{ env.MEDIATEK_REF }}
+            Project ref: ${{ needs.check_commits.outputs.latest_commit_sha }}
 
       - name: Clean up old releases
         uses: dev-drprasad/delete-older-releases@master
