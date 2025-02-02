@@ -1,5 +1,10 @@
 ---
 # More about feed: https://git01.mediatek.com/plugins/gitiles/openwrt/feeds/mtk-openwrt-feeds/
+#
+# NOTE: There are two versions:
+# - https://git01.mediatek.com/plugins/gitiles/openwrt/feeds/mtk-openwrt-feeds/+/refs/heads/master/autobuild/unified/#filogic-880-wifi7-update_to_date-release (is failing in patches mt76)
+# - https://git01.mediatek.com/plugins/gitiles/openwrt/feeds/mtk-openwrt-feeds/+/refs/heads/master/autobuild/unified/#filogic-880-wifi7-alpha-release-2024_12_06
+#
 name: Build image for BPi-R4 with MTK feed - alt - my config
 
 on:
@@ -19,10 +24,12 @@ env:
   REMOTE_BRANCH: main
   # OpenWrt
   OPENWRT_REPOSITORY: https://github.com/openwrt/openwrt
+  # OPENWRT_REF: openwrt-24.10
   OPENWRT_REF: openwrt-24.10
   # Mediatek Feed
   MEDIATEK_REPOSITORY: https://git01.mediatek.com/openwrt/feeds/mtk-openwrt-feeds
-  MEDIATEK_REF: master
+  # MEDIATEK_REF: master
+  MEDIATEK_REF: 47fd8068e3bcd23bb606c711ed50149b266f09af
   # Configuration
   RELEASE_PREFIX: bpi-r4-mtk
   DEVICE_CONFIG: ${{ inputs.DEVICE_CONFIG == 'poe' && 'configs/mediatek/mt7988a/bpi-r4-poe' || 'configs/mediatek/mt7988a/bpi-r4' }}
@@ -128,7 +135,7 @@ jobs:
         run: |
           cd openwrt;
           cp ../my_files/ethtool/Makefile package/network/utils/ethtool/Makefile
-          rm ../mtk-openwrt-feeds/autobuild/unified/global/24.10/patches-base/0007-package-network-ethtool-downgrade-to-version-6.7.patch
+          rm ../mtk-openwrt-feeds/autobuild/unified/global/24.10/patches-base/0007-package-network-ethtool-downgrade-to-version-6.7.patch || true
 
       - name: Run Mediatek prepare
         run: |
@@ -157,6 +164,11 @@ jobs:
         run: |
           cd openwrt;
           make defconfig
+
+      - name: Comment mtk internal package
+        run: |
+          cd openwrt;
+          sed -i 's/CONFIG_PACKAGE_kmod-crypto-eip=y/# CONFIG_PACKAGE_kmod-crypto-eip is not set/g' .config
 
       - name: Remove packages that are marked as modules
         run: |
