@@ -175,6 +175,11 @@ jobs:
           cd openwrt;
           grep "=m" .config | grep -v 'CONFIG_PACKAGE_libustream-mbedtls=m' | while read -r line; do module=$(echo "$line" | cut -f1 -d'='); sed -i "s/^$line$/# $module is not set/" .config; done
 
+      - name: Add temporary workaround for mt76
+        run: |
+          cd openwrt;
+          cp ../workarounds/0076-Comment-temporary-problematic-code.patch package/kernel/mt76/patches/
+
       - name: Build the firmware image
         run: |
           cd openwrt;
