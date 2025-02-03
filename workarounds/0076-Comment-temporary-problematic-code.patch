@@ -1,0 +1,134 @@
+From 1736523cd26da02b6114a2f05866dde4dd41aa6a Mon Sep 17 00:00:00 2001
+From: Your Name <you@example.com>
+Date: Mon, 3 Feb 2025 07:16:27 +0000
+Subject: [PATCH] Comment temporary problematic code
+
+During compilation, it raises an error:
+
+	build_dir/target-aarch64_cortex-a53_musl/linux-mediatek_filogic/mt76-2025.01.14~8e4f72b6/mt7996/main.c:582:75: error: 'struct mt76_phy' has no member named 'lists'
+	  582 |                         if (dev->testmode_enable && phy->mt76 && phy->mt76->lists)
+	      |                                                                           ^~
+	build_dir/target-aarch64_cortex-a53_musl/linux-mediatek_filogic/mt76-2025.01.14~8e4f72b6/mt7996/main.c:583:48: error: 'struct mt76_phy' has no member named 'lists'
+	  583 |                                 kfree(phy->mt76->lists);
+	      |                                                ^~
+	build_dir/target-aarch64_cortex-a53_musl/linux-mediatek_filogic/mt76-2025.01.14~8e4f72b6/mt7996/main.c: In function 'mt7996_set_channel':
+	build_dir/target-aarch64_cortex-a53_musl/linux-mediatek_filogic/mt76-2025.01.14~8e4f72b6/mt7996/main.c:609:68: error: 'struct mt76_phy' has no member named 'test'
+	  609 |                 if (!mt76_testmode_enabled(phy->mt76) && !phy->mt76->test.bf_en) {
+	      |                                                                    ^~
+	build_dir/target-aarch64_cortex-a53_musl/linux-mediatek_filogic/mt76-2025.01.14~8e4f72b6/mt7996/main.c:637:58: error: 'struct mt76_phy' has no member named 'test'
+	  637 |         if (mt76_testmode_enabled(phy->mt76) || phy->mt76->test.bf_en) {
+	      |                                                          ^~
+---
+ mt7996/main.c        | 30 +++++++++++++++++-------------
+ mt7996/mcu.c         | 18 +++++++++++-------
+ mt7996/mtk_debugfs.c |  3 ++-
+ 3 files changed, 30 insertions(+), 21 deletions(-)
+
+diff --git a/mt7996/main.c b/mt7996/main.c
+index 9132750..dad5672 100644
+--- a/mt7996/main.c
++++ b/mt7996/main.c
+@@ -17,8 +17,9 @@ static void mt7996_testmode_disable_all(struct mt7996_dev *dev)
+ 
+ 	for (i = 0; i < __MT_MAX_BAND; i++) {
+ 		phy = __mt7996_phy(dev, i);
+-		if (phy)
+-			mt76_testmode_set_state(phy->mt76, MT76_TM_STATE_OFF);
++// dpawlik: Comment problematic code
++//		if (phy)
++//			mt76_testmode_set_state(phy->mt76, MT76_TM_STATE_OFF);
+ 	}
+ }
+ 
+@@ -579,8 +580,9 @@ static void mt7996_remove_interface(struct ieee80211_hw *hw,
+ 		if (vif == phy->monitor_vif) {
+ 			phy->monitor_vif = NULL;
+ 
+-			if (dev->testmode_enable)
+-				kfree(phy->mt76->lists);
++// dpawlik: Comment temporary problematic code
++//			if (dev->testmode_enable)
++//				kfree(phy->mt76->lists);
+ 		}
+ 	}
+ 
+@@ -606,11 +608,12 @@ int mt7996_set_channel(struct mt76_phy *mphy)
+ 	int ret = 0;
+ 
+ 	if (mphy->chanctx && mphy->chanctx->state == MT76_CHANCTX_STATE_ADD) {
+-		if (!mt76_testmode_enabled(phy->mt76) && !phy->mt76->test.bf_en) {
+-			ret = mt7996_mcu_edcca_enable(phy, true);
+-			if (ret)
+-				goto out;
+-		}
++// dpawlik: Comment temporary problematic code
++//		if (!mt76_testmode_enabled(phy->mt76) && !phy->mt76->test.bf_en) {
++//			ret = mt7996_mcu_edcca_enable(phy, true);
++//			if (ret)
++//				goto out;
++//		}
+ 
+ 		ret = mt7996_mcu_set_pp_en(phy, PP_USR_MODE,
+ 					   mphy->chanctx->chandef.punctured);
+@@ -634,10 +637,11 @@ int mt7996_set_channel(struct mt76_phy *mphy)
+ 			goto out;
+ 	}
+ 
+-	if (mt76_testmode_enabled(phy->mt76) || phy->mt76->test.bf_en) {
+-		mt7996_tm_update_channel(phy);
+-		goto out;
+-	}
++// dpawlik: Comment temporary problematic code
++//	if (mt76_testmode_enabled(phy->mt76) || phy->mt76->test.bf_en) {
++//		mt7996_tm_update_channel(phy);
++//		goto out;
++//	}
+ 
+ 	ret = mt7996_mcu_set_chan_info(phy, UNI_CHANNEL_SWITCH, false);
+ 	if (ret)
+diff --git a/mt7996/mcu.c b/mt7996/mcu.c
+index cce808b..4bb5859 100644
+--- a/mt7996/mcu.c
++++ b/mt7996/mcu.c
+@@ -1943,13 +1943,17 @@ mt7996_mcu_bss_basic_tlv(struct sk_buff *skb, struct ieee80211_vif *vif,
+ 	bss->hw_bss_idx = idx;
+ 
+ 	if (vif->type == NL80211_IFTYPE_MONITOR) {
+-		struct mt76_testmode_data *td = &phy->test;
+-
+-		if (!td->bf_en)
+-			memcpy(bss->bssid, phy->macaddr, ETH_ALEN);
+-		else
+-			memcpy(bss->bssid, td->addr[2], ETH_ALEN);
+-		return 0;
++// dpawlik: Comment problematic code
++//		struct mt76_testmode_data *td = &phy->test;
++//
++//		if (!td->bf_en)
++//			memcpy(bss->bssid, phy->macaddr, ETH_ALEN);
++//		else
++//			memcpy(bss->bssid, td->addr[2], ETH_ALEN);
++//		return 0;
++
++		memcpy(bss->bssid, phy->macaddr, ETH_ALEN);
++		return 0;		
+ 	}
+ 
+ 	if (!conf)
+diff --git a/mt7996/mtk_debugfs.c b/mt7996/mtk_debugfs.c
+index 0b064d7..18b66b0 100644
+--- a/mt7996/mtk_debugfs.c
++++ b/mt7996/mtk_debugfs.c
+@@ -2906,7 +2906,8 @@ static const struct file_operations mt7996_txpower_path_fops = {
+ static int mt7996_show_eeprom_mode(struct seq_file *s, void *data)
+ {
+ 	struct mt7996_dev *dev = dev_get_drvdata(s->private);
+-	struct mt76_dev *mdev = &dev->mt76;
++// dpawlik: Comment problematic code
++//	struct mt76_dev *mdev = &dev->mt76;
+ #ifdef CONFIG_NL80211_TESTMODE
+ 	const char *mtd_name = mdev->test_mtd.name;
+ 	u32 mtd_offset = mdev->test_mtd.offset;
+-- 
+2.48.1
+
