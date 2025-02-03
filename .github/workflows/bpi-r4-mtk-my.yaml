@@ -142,6 +142,16 @@ jobs:
           cd openwrt;
           bash ../mtk-openwrt-feeds/autobuild/unified/autobuild.sh filogic-mac80211-mt7988_rfb-mt7996 prepare log_file=make
 
+      - name: Add temporary workaround for mt76
+        run: |
+          cd openwrt;
+          cp ../workarounds/0076-Comment-temporary-problematic-code.patch package/kernel/mt76/patches/
+
+      - name: Do not create sample wireless networks
+        run: |
+          cd openwrt;
+          git checkout package/network/config/wifi-scripts
+
       - name: Print current config file
         run: |
           cd openwrt;
