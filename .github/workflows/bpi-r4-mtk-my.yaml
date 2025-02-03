@@ -28,8 +28,8 @@ env:
   OPENWRT_REF: openwrt-24.10
   # Mediatek Feed
   MEDIATEK_REPOSITORY: https://git01.mediatek.com/openwrt/feeds/mtk-openwrt-feeds
-  # MEDIATEK_REF: master
-  MEDIATEK_REF: 47fd8068e3bcd23bb606c711ed50149b266f09af
+  MEDIATEK_REF: master
+  # MEDIATEK_REF: 47fd8068e3bcd23bb606c711ed50149b266f09af
   # Configuration
   RELEASE_PREFIX: bpi-r4-mtk
   DEVICE_CONFIG: ${{ inputs.DEVICE_CONFIG == 'poe' && 'configs/mediatek/mt7988a/bpi-r4-poe' || 'configs/mediatek/mt7988a/bpi-r4' }}
@@ -142,15 +142,18 @@ jobs:
           cd openwrt;
           bash ../mtk-openwrt-feeds/autobuild/unified/autobuild.sh filogic-mac80211-mt7988_rfb-mt7996 prepare log_file=make
 
+      # NOTE: does the MTK wifi-scripts break 5GHz DFS scan?
       - name: Add temporary workaround for mt76
         run: |
           cd openwrt;
           cp ../workarounds/0076-Comment-temporary-problematic-code.patch package/kernel/mt76/patches/
+          sed -i 's@/sbin/smp-mt76.sh@#/sbin/smp-mt76.sh@g' package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh
+          sed -i 's@echo "Setup SMP Affinity"@#echo "Setup SMP Affinity"@g' package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh
 
       - name: Do not create sample wireless networks
         run: |
           cd openwrt;
-          git checkout package/network/config/wifi-scripts
+          git checkout package/network/config/wifi-scripts/files/lib/wifi/mac80211.uc
 
       - name: Print current config file
         run: |
