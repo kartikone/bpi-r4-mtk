@@ -1,4 +1,4 @@
-From 1785e7581524d979305efee78f2b6308333ff3b4 Mon Sep 17 00:00:00 2001
+From dcfb8134f20eaa3ce4bbd7fef73d3a6310dd3cf1 Mon Sep 17 00:00:00 2001
 From: Your Name <you@example.com>
 Date: Mon, 3 Feb 2025 07:16:27 +0000
 Subject: [PATCH] Comment temporary problematic code
@@ -19,13 +19,13 @@ During compilation, it raises an error:
 	  637 |         if (mt76_testmode_enabled(phy->mt76) || phy->mt76->test.bf_en) {
 	      |                                                          ^~
 ---
- mt7996/main.c        |  9 +++++++++
+ mt7996/main.c        | 15 +++++++++++++++
  mt7996/mcu.c         | 18 ++++++++++++------
  mt7996/mtk_debugfs.c |  2 +-
- 3 files changed, 22 insertions(+), 7 deletions(-)
+ 3 files changed, 28 insertions(+), 7 deletions(-)
 
 diff --git a/mt7996/main.c b/mt7996/main.c
-index 9132750..ddbe141 100644
+index 9132750..8c01692 100644
 --- a/mt7996/main.c
 +++ b/mt7996/main.c
 @@ -17,8 +17,10 @@ static void mt7996_testmode_disable_all(struct mt7996_dev *dev)
@@ -50,7 +50,7 @@ index 9132750..ddbe141 100644
  		}
  	}
  
-@@ -606,11 +610,14 @@ int mt7996_set_channel(struct mt76_phy *mphy)
+@@ -606,11 +610,20 @@ int mt7996_set_channel(struct mt76_phy *mphy)
  	int ret = 0;
  
  	if (mphy->chanctx && mphy->chanctx->state == MT76_CHANCTX_STATE_ADD) {
@@ -61,11 +61,17 @@ index 9132750..ddbe141 100644
  			if (ret)
  				goto out;
  		}
++#else
++		if (!mt76_testmode_enabled(phy->mt76)) {
++			ret = mt7996_mcu_edcca_enable(phy, true);
++			if (ret)
++				goto out;
++		}
 +#endif
  
  		ret = mt7996_mcu_set_pp_en(phy, PP_USR_MODE,
  					   mphy->chanctx->chandef.punctured);
-@@ -634,10 +641,12 @@ int mt7996_set_channel(struct mt76_phy *mphy)
+@@ -634,10 +647,12 @@ int mt7996_set_channel(struct mt76_phy *mphy)
  			goto out;
  	}
  
