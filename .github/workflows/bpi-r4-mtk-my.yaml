@@ -150,6 +150,11 @@ jobs:
           sed -i 's@/sbin/smp-mt76.sh@#/sbin/smp-mt76.sh@g' package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh
           sed -i 's@echo "Setup SMP Affinity"@#echo "Setup SMP Affinity"@g' package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh
 
+      - name: Add patch for wifi power
+        run: |
+          cd openwrt;
+          curl -SL https://github.com/openwrt/mt76/commit/8088940ffd047a6d282a95af829562e8038f5b2d.patch | tee package/kernel/mt76/patches/0077-Yukariin-fix-wifi-power.patch
+
       - name: Do not create sample wireless networks
         run: |
           cd openwrt;
