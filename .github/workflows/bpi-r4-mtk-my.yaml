@@ -16,7 +16,7 @@ on:
         type: choice
         default: 'non-poe'
         options:
-          # - poe
+          - poe
           - non-poe
 
 env:
@@ -168,7 +168,7 @@ jobs:
       - name: Configure firmware image
         run: |
           cd openwrt;
-          curl -SL https://raw.githubusercontent.com/danpawlik/openwrt-builder/master/configs/mediatek/mt7988a/bpi-r4 > .config
+          curl -SL https://raw.githubusercontent.com/danpawlik/openwrt-builder/master/${{ env.DEVICE_CONFIG }} > .config
           curl -SL https://raw.githubusercontent.com/danpawlik/openwrt-builder/master/configs/common/main-router >> .config
           curl -SL https://raw.githubusercontent.com/danpawlik/openwrt-builder/master/configs/common/snapshot-short >> .config
 
