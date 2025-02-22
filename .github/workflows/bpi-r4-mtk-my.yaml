@@ -90,35 +90,6 @@ jobs:
           cd openwrt;
           cp ../my_files/rules ../mtk-openwrt-feeds/autobuild/unified
 
-#      - name: Change wireless regdb - optional
-#        run: |
-#          cd openwrt;
-#          rm -rf package/firmware/wireless-regdb/patches;
-#          rm -rf ..//mtk-openwrt-feeds/autobuild/unified/filogic/mac80211/24.10/files/package/firmware/wireless-regdb/patches;
-#          mkdir -p package/firmware/wireless-regdb/patches;
-#          mkdir -p ../mtk-openwrt-feeds/autobuild/unified/filogic/mac80211/24.10/files/package/firmware/wireless-regdb/patches;
-#          cp ../my_files/500-tx_power.patch ../mtk-openwrt-feeds/autobuild/unified/filogic/mac80211/24.10/files/package/firmware/wireless-regdb/patches
-#          cp ../my_files/regdb.Makefile package/firmware/wireless-regdb/Makefile
-#
-#      - name: Copy woziwrt patches
-#        run: |
-#          cd openwrt;
-#          cp ../my_files/{/mt7988a-rfb-spim-nand-nmbm.dtso,mt7981-rfb-spim-nor.dtso,mt7988d-rfb.dts,mt7988a-rfb-spidev.dtso} \
-#              target/linux/mediatek/files-6.6/arch/arm64/boot/dts/mediatek/
-#
-#          # cp ../my_files/750-mtk-eth-add-jumbo-frame-support-mt7998.patch target/linux/mediatek/patches-6.6
-#          # cp ../my_files/0001-mt76-w-package-makefile.patch ../mtk-openwrt-feeds/autobuild/unified/filogic/mac80211/24.10/patches-base/0001-mt76-package-makefile.patch
-#          # cp ../my_files/0004-mac80211-w-package-makefile.patch ../mtk-openwrt-feeds/autobuild/unified/filogic/mac80211/24.10/patches-base/0004-mac80211-package-makefile.patch
-#
-#          cp ../my_files/ethtool/Makefile package/network/utils/ethtool/Makefile
-#          # cp -r ../my_files/0008-wozi-mac80211-Support-EHT-1024-aggregation-size-in-T.patch ../mtk-openwrt-feeds/autobuild/unified/filogic/mac80211/24.10/files/package/kernel/mac80211/patches/subsys/0008-wifi-mac80211-Support-EHT-1024-aggregation-size-in-T.patch
-#          # cp -r ../my_files/0008-wozi-mac80211-Support-EHT-1024-aggregation-size-in-T.patch ../mtk-openwrt-feeds/autobuild/autobuild_5.4_mac80211_release/mt7988_wifi7_mac80211_mlo/package/kernel/mac80211/patches/subsys/0008-wifi-mac80211-Support-EHT-1024-aggregation-size-in-T.patch
-#          cp ../my_files/999-2709-net-ethernet-mtk_eth_soc-add-rss-lro-reg.patch ../mtk-openwrt-feeds/autobuild/unified/global/24.10/files/target/linux/mediatek/patches-6.6/
-#          cp ../my_files/999-2710-net-ethernet-mtk_eth_soc-add-rss-support.patch ../mtk-openwrt-feeds/autobuild/unified/global/24.10/files/target/linux/mediatek/patches-6.6/
-#          cp ../my_files/0006-arch-arm64-dts-mt7988a-add-adma-intrrupts.patch ../mtk-openwrt-feeds/autobuild/unified/global/24.10/patches-base/
-#
-#          cp -r ../my_files/mediatek/*.* ../mtk-openwrt-feeds/autobuild/unified/global/24.10/files/target/linux/mediatek/files-6.6/drivers/net/ethernet/mediatek/
-
       - name: Make sed
         run: |
           sed -i 's/CONFIG_PACKAGE_perf=y/# CONFIG_PACKAGE_perf is not set/' \
@@ -142,18 +113,10 @@ jobs:
           cd openwrt;
           bash ../mtk-openwrt-feeds/autobuild/unified/autobuild.sh filogic-mac80211-mt7988_rfb-mt7996 prepare log_file=make
 
-      # NOTE: does the MTK wifi-scripts break 5GHz DFS scan?
-      - name: Add temporary workaround for mt76
-        run: |
-          cd openwrt;
-          cp ../workarounds/0076-Comment-temporary-problematic-code.patch package/kernel/mt76/patches/
-          sed -i 's@/sbin/smp-mt76.sh@#/sbin/smp-mt76.sh@g' package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh
-          sed -i 's@echo "Setup SMP Affinity"@#echo "Setup SMP Affinity"@g' package/network/config/wifi-scripts/files/lib/netifd/wireless/mac80211.sh
-
       - name: Add patch for wifi power
         run: |
           cd openwrt;
-          curl -SL https://github.com/openwrt/mt76/commit/8088940ffd047a6d282a95af829562e8038f5b2d.patch | tee package/kernel/mt76/patches/0077-Yukariin-fix-wifi-power.patch
+          curl -SL https://github.com/openwrt/mt76/pull/954/commits/8088940ffd047a6d282a95af829562e8038f5b2d.patch | tee package/kernel/mt76/patches/0077-Yukariin-fix-wifi-power.patch
 
       - name: Do not create sample wireless networks
         run: |
@@ -171,6 +134,7 @@ jobs:
           curl -SL https://raw.githubusercontent.com/danpawlik/openwrt-builder/master/${{ env.DEVICE_CONFIG }} > .config
           curl -SL https://raw.githubusercontent.com/danpawlik/openwrt-builder/master/configs/common/main-router >> .config
           curl -SL https://raw.githubusercontent.com/danpawlik/openwrt-builder/master/configs/common/snapshot-short >> .config
+          curl -SL https://raw.githubusercontent.com/danpawlik/openwrt-builder/master/configs/common/snapshot-mtk-feed  >> .config
 
       - name: Enable openssl
         run: |
