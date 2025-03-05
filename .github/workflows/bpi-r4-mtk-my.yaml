@@ -133,7 +133,7 @@ jobs:
           cd openwrt;
           curl -SL https://raw.githubusercontent.com/danpawlik/openwrt-builder/master/${{ env.DEVICE_CONFIG }} > .config
           curl -SL https://raw.githubusercontent.com/danpawlik/openwrt-builder/master/configs/common/main-router >> .config
-          curl -SL https://raw.githubusercontent.com/danpawlik/openwrt-builder/master/configs/common/snapshot-short >> .config
+          curl -SL https://raw.githubusercontent.com/danpawlik/openwrt-builder/master/configs/common/snapshot >> .config
           curl -SL https://raw.githubusercontent.com/danpawlik/openwrt-builder/master/configs/common/snapshot-mtk-feed  >> .config
 
       - name: Enable openssl
