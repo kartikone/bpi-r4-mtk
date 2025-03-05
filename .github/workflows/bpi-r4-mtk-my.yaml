@@ -113,10 +113,15 @@ jobs:
           cd openwrt;
           bash ../mtk-openwrt-feeds/autobuild/unified/autobuild.sh filogic-mac80211-mt7988_rfb-mt7996 prepare log_file=make
 
-      - name: Add patch for wifi power
+#      - name: Add patch for wifi power
+#        run: |
+#          cd openwrt;
+#          curl -SL https://github.com/openwrt/mt76/pull/954/commits/8088940ffd047a6d282a95af829562e8038f5b2d.patch | tee package/kernel/mt76/patches/0077-Yukariin-fix-wifi-power.patch
+
+      - name: Add patch for wifi power - alternative
         run: |
           cd openwrt;
-          curl -SL https://github.com/openwrt/mt76/pull/954/commits/8088940ffd047a6d282a95af829562e8038f5b2d.patch | tee package/kernel/mt76/patches/0077-Yukariin-fix-wifi-power.patch
+          curl -SL https://github.com/pmarques/openwrt/commit/47008eabacd48602d94ea0f3ba01fe2c79d70f81.patch | tee package/kernel/mt76/patches/0077-Yukariin-fix-wifi-power.patch
 
       - name: Do not create sample wireless networks
         run: |
